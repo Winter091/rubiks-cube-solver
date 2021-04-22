@@ -15,6 +15,8 @@ int main()
     std::srand(std::time(0));
 
     Cube c;
-    c.scramble(99);
+    for (int i = 0; i < 100'000'000; i++)
+        c.R();
+
     c.print();
 }

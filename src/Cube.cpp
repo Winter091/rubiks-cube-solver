@@ -6,177 +6,46 @@
 
 Cube::Cube()
 {
-    *(uint64_t*)(data + 0)  = 0x00'00'00'00'00'00'00'00ULL;
-    *(uint64_t*)(data + 8)  = 0x01'01'01'01'01'01'01'01ULL;
-    *(uint64_t*)(data + 16) = 0x02'02'02'02'02'02'02'02ULL;
-    *(uint64_t*)(data + 24) = 0x03'03'03'03'03'03'03'03ULL;
-    *(uint64_t*)(data + 32) = 0x04'04'04'04'04'04'04'04ULL;
-    *(uint64_t*)(data + 40) = 0x05'05'05'05'05'05'05'05ULL;
+    for (int i = 0; i < 12; i++)
+        edges[i] = { (uint8_t)i, 0 };
+
+    for (int i = 0; i < 8; i++)
+        corners[i] = { (uint8_t)i, 0 };
 }
 
-void Cube::roll90(Face f)
+void Cube::print()
 {
-    __asm__ __volatile__ (
-        "rolq $16, %[face]\n"
+    const char* edge_lookup[12] = {
+        "UF", "UL", "UB", "UR", 
+        "FR", "FL", "BL", "BR", 
+        "DF", "DL", "DB", "DR"
+    };
 
-        : [face] "+r" (*(uint64_t*)(data + (unsigned)f * 8))
-        :
-        :
-    );
-}
+    const char* corner_lookup[8] = {
+        "UFR", "UFL", "UBL", "UBR", 
+        "DFR", "DFL", "DBL", "DBR"
+    };
+    
+    std::cout << "Edges:\n";
+    for (int i = 0; i < 12; i++)
+        std::cout << edge_lookup[i] << ' ';
+    std::cout << '\n';
+    for (int i = 0; i < 12; i++)
+        std::cout << edge_lookup[edges[i].index] << ' ';
+    std::cout << '\n';
+    for (int i = 0; i < 12; i++)
+        std::cout << (int)edges[i].orientation << "  ";
 
-void Cube::roll180(Face f)
-{
-    __asm__ __volatile__ (
-        "rolq $32, %[face]\n"
-
-        : [face] "+r" (*(uint64_t*)(data + (unsigned)f * 8))
-        :
-        :
-    );
-}
-
-void Cube::roll270(Face f)
-{
-    __asm__ __volatile__ (
-        "rolq $48, %[face]\n"
-
-        : [face] "+r" (*(uint64_t*)(data + (unsigned)f * 8))
-        :
-        :
-    );
-}
-
-void Cube::rotate_sides_90(int i1, int i2, int i3, int i4, int c1, int c2, int c3, int c4)
-{
-    uint16_t temp16 = *(uint16_t*)(data + i1);
-
-    *(uint16_t*)(data + i1) = *(uint16_t*)(data + i2);
-    *(uint16_t*)(data + i2) = *(uint16_t*)(data + i3);
-    *(uint16_t*)(data + i3) = *(uint16_t*)(data + i4);
-    *(uint16_t*)(data + i4) = temp16;
-
-    Cube::Color temp8 = data[c1];
-    data[c1] = data[c2];
-    data[c2] = data[c3];
-    data[c3] = data[c4];
-    data[c4] = temp8;
-}
-
-void Cube::rotate_sides_180(int i1, int i2, int i3, int i4, int c1, int c2, int c3, int c4)
-{
-    std::swap(*((uint16_t*)(data + i1)), *((uint16_t*)(data + i2)));
-    std::swap(*((uint16_t*)(data + i3)), *((uint16_t*)(data + i4)));
-    std::swap(*((uint8_t*)(data + c1)), *((uint8_t*)(data + c2)));
-    std::swap(*((uint8_t*)(data + c3)), *((uint8_t*)(data + c4)));
-}
-
-void Cube::F()
-{
-    roll90(Face::FRONT);
-    rotate_sides_90(4, 10, 40, 30, 6, 12, 42, 24);
-}
-
-void Cube::B() 
-{
-    roll90(Face::BACK);
-    rotate_sides_90(0, 26, 44, 14, 2, 28, 46, 8);
-}
-
-void Cube::L() 
-{   
-    roll90(Face::LEFT);
-    rotate_sides_90(6, 34, 46, 22, 0, 36, 40, 16);
-}
-
-void Cube::R() 
-{
-    roll90(Face::RIGHT);
-    rotate_sides_90(2, 18, 42, 38, 4, 20, 44, 32);
-}
-
-void Cube::D() 
-{
-    roll90(Face::DOWN);
-    rotate_sides_90(12, 36, 28, 20, 14, 38, 30, 22);
-}
-
-void Cube::U() 
-{
-    roll90(Face::UP);
-    rotate_sides_90(8, 16, 24, 32, 10, 18, 26, 34);
-}
-
-void Cube::F_prime() 
-{
-    roll270(Face::FRONT);
-    rotate_sides_90(30, 40, 10, 4, 24, 42, 12, 6);
-}
-
-void Cube::B_prime() 
-{
-    roll270(Face::BACK);
-    rotate_sides_90(14, 44, 26, 0, 8, 46, 28, 2);
-}
-
-void Cube::L_prime() 
-{
-    roll270(Face::LEFT);
-    rotate_sides_90(22, 46, 34, 6, 16, 40, 36, 0);
-}
-
-void Cube::R_prime() 
-{
-    roll270(Face::RIGHT);
-    rotate_sides_90(38, 42, 18, 2, 32, 44, 20, 4);
-}
-
-void Cube::D_prime() 
-{
-    roll270(Face::DOWN);
-    rotate_sides_90(20, 28, 36, 12, 22, 30, 38, 14);
-}
-
-void Cube::U_prime() 
-{
-    roll270(Face::UP);
-    rotate_sides_90(32, 24, 16, 8, 34, 26, 18, 10);
-}
-
-void Cube::F2() 
-{
-    this->roll180(Face::FRONT);
-    this->rotate_sides_180(4, 40, 10, 30, 6, 42, 12, 24);
-}
-
-void Cube::B2() 
-{
-    this->roll180(Face::BACK);
-    this->rotate_sides_180(0, 44, 26, 14, 2, 46, 28, 8);
-}
-
-void Cube::L2() 
-{
-    this->roll180(Face::LEFT);
-    this->rotate_sides_180(6, 46, 34, 22, 0, 40, 36, 16);
-}
-
-void Cube::R2() 
-{
-    this->roll180(Face::RIGHT);
-    this->rotate_sides_180(2, 42, 18, 38, 4, 44, 20, 32);
-}
-
-void Cube::D2() 
-{
-    this->roll180(Face::DOWN);
-    this->rotate_sides_180(12, 28, 36, 20, 14, 30, 38, 22);
-}
-
-void Cube::U2() 
-{
-    this->roll180(Face::UP);
-    this->rotate_sides_180(8, 24, 16, 32, 10, 26, 18, 34);
+    std::cout << "\n\nCorners:\n";
+    for (int i = 0; i < 8; i++)
+        std::cout << corner_lookup[i] << ' ';
+    std::cout << '\n';
+    for (int i = 0; i < 8; i++)
+        std::cout << corner_lookup[corners[i].index] << ' ';
+    std::cout << '\n';
+    for (int i = 0; i < 8; i++)
+        std::cout << (int)corners[i].orientation << "   ";
+    std::cout << '\n';
 }
 
 void Cube::move(const std::string& moves)
@@ -211,99 +80,211 @@ void Cube::move(const std::string& moves)
         else if (move == "D2") D2();
         else if (move == "U2") U2();
 
-        else {
+        else
             std::cerr << "Unrecognized move : " << move << '\n';
-        }
     }
 
 }
 
-void Cube::scramble(int rotations)
+void Cube::scramble(int num_rotations)
 {
-    const char* possible_moves[12] = {
+    const char* possible_moves[18] = {
         "F ", "B ", "L ", "R ", "D ", "U ",
-        "F' ", "B' ", "L' ", "R' ", "D' ", "U' "
+        "F' ", "B' ", "L' ", "R' ", "D' ", "U' ",
+        "F2 ", "B2 ", "L2 ", "R2 ", "D2 ", "U2 "
     };
     
     std::string curr_move;
-    for (int i = 0; i < rotations; i++)
-        curr_move.append(possible_moves[std::rand() % 12]);
+    for (int i = 0; i < num_rotations; i++)
+        curr_move.append(possible_moves[std::rand() % 18]);
     
-    std::cout << "Scrambing cube with:\n" << curr_move << '\n';
+    std::cout << "Scrambling cube with:\n" << curr_move << '\n';
     this->move(curr_move);
 }
 
 
-static char get_name(Cube::Color c)
+// Indices should be passed in opposite direction of the roration
+void Cube::rotate_face_90(int e1, int e2, int e3, int e4, int c1, int c2, int c3, int c4)
 {
-    switch (c) {
-        case Cube::Color::WHITE:   return 'W'; break;
-        case Cube::Color::GREEN:   return 'G'; break;
-        case Cube::Color::RED:     return 'R'; break;
-        case Cube::Color::BLUE:    return 'B'; break;
-        case Cube::Color::ORANGE:  return 'O'; break;
-        case Cube::Color::YELLOW:  return 'Y'; break;
-        default: return 'X';
-    }
+    Cubie temp = edges[e1];
+    edges[e1] = edges[e2];
+    edges[e2] = edges[e3];
+    edges[e3] = edges[e4];
+    edges[e4] = temp;
+
+    temp = corners[c1];
+    corners[c1] = corners[c2];
+    corners[c2] = corners[c3];
+    corners[c3] = corners[c4];
+    corners[c4] = temp;
 }
 
-void Cube::print()
+void Cube::rotate_face_180(int e1, int e2, int e3, int e4, int c1, int c2, int c3, int c4)
 {
-    auto print_top_bottom = [this](int margin, int side) {
-        std::printf("%*s", 3 + margin, "");
-        for (int i = 0; i < 3; i++)
-            std::printf("%c", get_name(data[side * 8 + i]));
-        
-        std::printf("\n%*s", 3 + margin, "");
-        std::printf("%c%c%c", 
-            get_name(data[side * 8 + 7]), 
-            get_name((Cube::Color)side),
-            get_name(data[side * 8 + 3])
-        );
+    std::swap(edges[e1], edges[e3]);
+    std::swap(edges[e2], edges[e4]);
 
-        std::printf("\n%*s", 3 + margin, "");
-        for (int i = 0; i < 3; i++)
-            std::printf("%c", get_name(data[side * 8 + 6 - i]));
-        
-        for (int i = 0; i < margin; i++)
-            std::printf("\n");
-    };
-
-    auto print_center1 = [this](int margin, int i1, int i2, int i3) {
-        for (int i = 1; i <= 4; i++) {
-            std::printf("%c%c%c", 
-                get_name(data[i * 8 + i1]),
-                get_name(data[i * 8 + i2]),
-                get_name(data[i * 8 + i3])
-            );
-
-            std::printf("%*s", margin, "");
-        }
-        std::printf("\n");
-    };
-
-    auto print_center2 = [this](int margin, int i1, int i3) {
-        for (int i = 1; i <= 4; i++) {
-            std::printf("%c%c%c", 
-                get_name(data[i * 8 + i1]),
-                get_name((Cube::Color)i),
-                get_name(data[i * 8 + i3])
-            );
-
-            std::printf("%*s", margin, "");
-        }
-        std::printf("\n");
-    };
-    
-    int margin = 2;
-    
-    print_top_bottom(margin, 0);
-
-    print_center1(margin, 0, 1, 2);
-    print_center2(margin, 7,    3);
-    print_center1(margin, 6, 5, 4);
-
-    for (int i = 0; i < margin - 1; i++)
-        std::printf("\n");
-    print_top_bottom(margin, 5);
+    std::swap(corners[c1], corners[c3]);
+    std::swap(corners[c2], corners[c4]);
 }
+
+void Cube::update_edge_orientation(int index) 
+{
+    edges[index].orientation ^= 1;
+}
+
+void Cube::update_corner_orientation(int index, int step) 
+{
+    corners[index].orientation += step;
+
+    //corners[index].orientation %= 3;
+    if (corners[index].orientation > 2)
+        corners[index].orientation -= 3;
+}
+
+void Cube::U()
+{
+    rotate_face_90(3, 2, 1, 0, 3, 2, 1, 0);
+}
+
+void Cube::D()
+{
+    rotate_face_90(8, 9, 10, 11, 4, 5, 6, 7);
+}
+
+void Cube::L() 
+{
+    rotate_face_90(1, 6, 9, 5, 1, 2, 6, 5);
+    update_corner_orientation(6, 1);
+    update_corner_orientation(5, 2);
+    update_corner_orientation(1, 1);
+    update_corner_orientation(2, 2);
+}
+
+void Cube::R() 
+{
+    rotate_face_90(3, 4, 11, 7, 0, 4, 7, 3);
+    update_corner_orientation(7, 2);
+    update_corner_orientation(4, 1);
+    update_corner_orientation(0, 2);
+    update_corner_orientation(3, 1);
+}
+
+void Cube::F() 
+{
+    rotate_face_90(0, 5, 8, 4, 1, 5, 4, 0);
+
+    update_corner_orientation(1, 2);
+    update_corner_orientation(0, 1);
+    update_corner_orientation(4, 2);
+    update_corner_orientation(5, 1);
+
+    update_edge_orientation(0);
+    update_edge_orientation(5);
+    update_edge_orientation(8);
+    update_edge_orientation(4);
+}
+
+void Cube::B() 
+{
+    rotate_face_90(2, 7, 10, 6, 3, 7, 6, 2);
+
+    update_corner_orientation(2, 1);
+    update_corner_orientation(3, 2);
+    update_corner_orientation(7, 1);
+    update_corner_orientation(6, 2);
+
+    update_edge_orientation(2);
+    update_edge_orientation(7);
+    update_edge_orientation(10);
+    update_edge_orientation(6);
+}
+
+void Cube::U_prime() 
+{
+    rotate_face_90(0, 1, 2, 3, 0, 1, 2, 3);
+}
+
+void Cube::D_prime() 
+{
+    rotate_face_90(11, 10, 9, 8, 7, 6, 5, 4);
+}
+
+void Cube::L_prime() 
+{
+    rotate_face_90(5, 9, 6, 1, 5, 6, 2, 1);
+    update_corner_orientation(6, 1);
+    update_corner_orientation(5, 2);
+    update_corner_orientation(1, 1);
+    update_corner_orientation(2, 2);
+}
+
+void Cube::R_prime() 
+{
+    rotate_face_90(7, 11, 4, 3, 3, 7, 4, 0);
+    update_corner_orientation(7, 2);
+    update_corner_orientation(4, 1);
+    update_corner_orientation(0, 2);
+    update_corner_orientation(3, 1);
+}
+
+void Cube::F_prime() 
+{
+    rotate_face_90(4, 8, 5, 0, 0, 4, 5, 1);
+
+    update_corner_orientation(1, 2);
+    update_corner_orientation(0, 1);
+    update_corner_orientation(4, 2);
+    update_corner_orientation(5, 1);
+
+    update_edge_orientation(0);
+    update_edge_orientation(5);
+    update_edge_orientation(8);
+    update_edge_orientation(4);
+}
+
+void Cube::B_prime() 
+{
+    rotate_face_90(6, 10, 7, 2, 2, 6, 7, 3);
+
+    update_corner_orientation(2, 1);
+    update_corner_orientation(3, 2);
+    update_corner_orientation(7, 1);
+    update_corner_orientation(6, 2);
+
+    update_edge_orientation(2);
+    update_edge_orientation(7);
+    update_edge_orientation(10);
+    update_edge_orientation(6);
+}
+
+void Cube::U2() 
+{
+    rotate_face_180(3, 2, 1, 0, 3, 2, 1, 0);
+}
+
+void Cube::D2() 
+{
+    rotate_face_180(8, 9, 10, 11, 4, 5, 6, 7);
+}
+
+void Cube::L2() 
+{
+    rotate_face_180(1, 6, 9, 5, 1, 2, 6, 5);
+}
+
+void Cube::R2() 
+{
+    rotate_face_180(3, 4, 11, 7, 0, 4, 7, 3);
+}
+
+void Cube::F2() 
+{
+    rotate_face_180(0, 5, 8, 4, 1, 5, 4, 0);
+}
+
+void Cube::B2() 
+{
+    rotate_face_180(2, 7, 10, 6, 3, 7, 6, 2);
+}
+
