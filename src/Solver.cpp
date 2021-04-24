@@ -6,47 +6,50 @@
 #include <memory>
 
 bool move_is_unnecessary(int move, int prev_move) {
+    // If first letter of the move is the same
     for (int i = 0; i < 6; i++) {
         if ((move == i || move == 6 + i || move == 12 + i)
         && (prev_move == i || prev_move == 6 + i || prev_move == 12 + i))
             return true;
     }
 
-    auto helper = [&](int i, int j) {
+    // L R and simular things
+    for (int i = 0; i <= 4; i += 2) {
         if ((move == i || move == 6 + i || move == 12 + i)
-         && (prev_move == j || prev_move == j + 6 || prev_move == j + 12))
+         && (prev_move == i + 1 || prev_move == 6 + i + 1 || prev_move == 12 + i + 1))
             return true;
-        return false;
-    };
+    }
 
-    return helper(2, 3) || helper(0, 1) || helper(4, 5);
+    return false;
 }
 
 void simplify_solution(std::vector<int>& s)
 {
-    for (int n = 0; n < 50; n++) {
-        for (std::size_t i = 1; i < s.size(); i++) {
-        int m1 = s[i - 1];
-        int m2 = s[i];
-        
-        for (int j = 0; j < 6; j++) {
-            // X + X2 -> X'
-            if (((m1 == j && m2 == j + 12) || (m1 == j + 12 && m2 == j))) {
-                s.erase(s.begin() + i);
-                s[i - 1] = j + 6;
-            }
-            
-            // X + X' = nothing
-            else if (((m1 == j && m2 == j + 6) || (m1 == j + 6 && m2 == j))) {
-                s.erase(s.begin() + i - 1, s.begin() + i + 1);
-            }
+    int totally_arbitrary_number = 50;
 
-            // X2 + X2 = nothing
-            else if ((m1 == m2) && (m1 == j + 12)) {
-                s.erase(s.begin() + i - 1, s.begin() + i + 1);
+    for (int n = 0; n < totally_arbitrary_number; n++) {
+        for (std::size_t i = 1; i < s.size(); i++) {
+            int m1 = s[i - 1];
+            int m2 = s[i];
+            
+            for (int j = 0; j < 6; j++) {
+                // X + X2 -> X'
+                if (((m1 == j && m2 == j + 12) || (m1 == j + 12 && m2 == j))) {
+                    s.erase(s.begin() + i);
+                    s[i - 1] = j + 6;
+                }
+                
+                // X + X' = nothing
+                else if (((m1 == j && m2 == j + 6) || (m1 == j + 6 && m2 == j))) {
+                    s.erase(s.begin() + i - 1, s.begin() + i + 1);
+                }
+
+                // X2 + X2 = nothing
+                else if ((m1 == m2) && (m1 == j + 12)) {
+                    s.erase(s.begin() + i - 1, s.begin() + i + 1);
+                }
             }
         }
-    }
     }
     
 }
@@ -59,7 +62,7 @@ bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
         return false;
     }
 
-    for (int move : goal->allowed_moves_to_reach) {
+    for (int move : goal->allowed_moves) {
         if (goal->moves_done.empty() || !move_is_unnecessary(move, goal->moves_done.back())) {
             c.move_indexed(move);
             goal->moves_done.push_back(move);
@@ -75,20 +78,18 @@ bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
     return false;
 }
 
-bool iddfs(Cube& c, CubeGGoal* goal)
+void iddfs(Cube& c, CubeGGoal* goal)
 {
     for (int limit = 0; /* limit without a limit */ ; limit++) {
         std::cout << limit + 1 << ' ';
         std::cout.flush();
 
         if (dls(c, goal, limit))
-            return true;
+            return;
     }
-
-    return false;
 }
 
-// Take by value, so make a copy
+// Make a copy of the input cube
 void find_solution(Cube c)
 {
     std::vector<int> cube_solution;
@@ -102,12 +103,15 @@ void find_solution(Cube c)
     Timer t_outer;
     for (int i = 0; i < 4; i++) {
         std::cout << "Solving G" << i << " -> G" << i + 1 << ": ";
+
         Timer t_inner;
         iddfs(c, goals[i]);
         std::cout << t_inner << '\n';
+
         cube_solution.insert(cube_solution.end(), 
             goals[i]->moves_done.begin(), goals[i]->moves_done.end());
     }
+
     std::cout << "\nThe entire solution took " << t_outer << '\n';
     std::cout << "The found solution has length " 
         << cube_solution.size() << ":\n";

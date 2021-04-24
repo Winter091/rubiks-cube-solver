@@ -9,7 +9,7 @@ class CubeGGoal
 {
 public:
     std::vector<int> moves_done;
-    std::vector<int> allowed_moves_to_reach;
+    std::vector<int> allowed_moves;
     virtual bool is_satisfied(const Cube& c) = 0;
 };
 
@@ -20,7 +20,7 @@ public:
     {
         // All quarter turns
         for (int i = 0; i < 12; i++)
-            allowed_moves_to_reach.push_back(i);
+            allowed_moves.push_back(i);
     }
 
     bool is_satisfied(const Cube& c) override
@@ -40,7 +40,7 @@ public:
     CubeG1_G2Goal()
     {
         // everything but F, F', B, B'
-        allowed_moves_to_reach = {
+        allowed_moves = {
             0, 1, 4, 5,
             6, 7, 10, 11,
             12, 13, 14, 15, 16, 17
@@ -73,7 +73,7 @@ public:
     CubeG2_G3Goal()
     {
         // All *2 and U, U', D, D'
-        allowed_moves_to_reach = {
+        allowed_moves = {
             4, 5, 10, 11,
             12, 13, 14, 15, 16, 17,
         };
@@ -135,7 +135,7 @@ public:
     CubeG3_G4Goal()
     {
         // Only *2 moves
-        allowed_moves_to_reach = {
+        allowed_moves = {
             12, 13, 14, 15, 16, 17
         };
     }
@@ -154,7 +154,6 @@ public:
     }
 };
 
-bool dfs(Cube& c, CubeGGoal* group_to_reach, uint8_t curr_depth);
 void find_solution(Cube c);
 
 #endif

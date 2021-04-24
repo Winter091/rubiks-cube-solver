@@ -88,7 +88,7 @@ void Cube::move(const std::string& moves)
 
 }
 
-void Cube::scramble(int num_rotations)
+void Cube::scramble(int num_moves)
 {
     const char* possible_moves[18] = {
         "F ", "B ", "L ", "R ", "D ", "U ",
@@ -98,7 +98,7 @@ void Cube::scramble(int num_rotations)
     
     std::string curr_move;
     int prev = -1;
-    for (int i = 0; i < num_rotations; i++) {
+    for (int i = 0; i < num_moves; i++) {
         // Make sure there's at least no repeated moves
         int rand;
         while ((rand = std::rand() % 18) == prev);
@@ -107,7 +107,7 @@ void Cube::scramble(int num_rotations)
         curr_move.append(possible_moves[rand]);
     }
     
-    std::cout << "Scrambling cube with " << num_rotations << " moves:\n" << curr_move << "\n\n";
+    std::cout << "Scrambling cube using " << num_moves << " moves:\n" << curr_move << "\n\n";
     this->move(curr_move);
 }
 
@@ -226,6 +226,8 @@ const char* Cube::get_indexed_move_name(int index)
         case 16: return "U2";
         case 17: return "D2";
     };
+
+    return "How did we get here?";
 }
 
 // Indices should be passed in opposite direction of the roration

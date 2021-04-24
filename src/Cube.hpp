@@ -55,7 +55,7 @@ public:
 
     void print() const;
     void move(const std::string& moves);
-    void scramble(int num_rotations);
+    void scramble(int num_moves);
     void restore();
 
     int get_corner_orientation(int c_index) const;
