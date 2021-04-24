@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
+#include <cassert>
+#include <string_view>
 
 Cube::Cube()
 {
@@ -13,7 +15,7 @@ Cube::Cube()
         corners[i] = { (uint8_t)i, 0 };
 }
 
-void Cube::print()
+void Cube::print() const
 {
     const char* edge_lookup[12] = {
         "UF", "UL", "UB", "UR", 
@@ -45,7 +47,7 @@ void Cube::print()
     std::cout << '\n';
     for (int i = 0; i < 8; i++)
         std::cout << (int)corners[i].orientation << "   ";
-    std::cout << '\n';
+    std::cout << "\n\n\n";  
 }
 
 void Cube::move(const std::string& moves)
@@ -95,13 +97,136 @@ void Cube::scramble(int num_rotations)
     };
     
     std::string curr_move;
-    for (int i = 0; i < num_rotations; i++)
-        curr_move.append(possible_moves[std::rand() % 18]);
+    int prev = -1;
+    for (int i = 0; i < num_rotations; i++) {
+        // Make sure there's at least no repeated moves
+        int rand;
+        while ((rand = std::rand() % 18) == prev);
+        prev = rand;
+        
+        curr_move.append(possible_moves[rand]);
+    }
     
-    std::cout << "Scrambling cube with:\n" << curr_move << '\n';
+    std::cout << "Scrambling cube with " << num_rotations << " moves:\n" << curr_move << "\n\n";
     this->move(curr_move);
 }
 
+void Cube::restore()
+{
+    for (int i = 0; i < 12; i++)
+        edges[i] = { (uint8_t)i, 0 };
+
+    for (int i = 0; i < 8; i++)
+        corners[i] = { (uint8_t)i, 0 };
+}
+
+int Cube::get_corner_orientation(int c_index) const
+{
+    assert(c_index >= 0 && c_index <= 7);
+    return corners[c_index].orientation;
+}
+
+int Cube::get_edge_orientation(int e_index) const
+{
+    assert(e_index >= 0 && e_index <= 11);
+    return edges[e_index].orientation;
+}
+
+int Cube::get_corner_index(int c_index) const  
+{
+    assert(c_index >= 0 && c_index <= 7);
+    return corners[c_index].index;
+}
+
+int Cube::get_edge_index(int e_index) const 
+{
+    assert(e_index >= 0 && e_index <= 11);
+    return edges[e_index].index;
+}
+
+void Cube::move_indexed(int index)
+{
+    assert(index >= 0 && index <= 17);
+    
+    switch (index) {
+        case 0: L(); break;
+        case 1: R(); break;
+        case 2: F(); break;
+        case 3: B(); break;
+        case 4: U(); break;
+        case 5: D(); break;
+
+        case 6:  L_prime(); break;
+        case 7:  R_prime(); break;
+        case 8:  F_prime(); break;
+        case 9:  B_prime(); break;
+        case 10: U_prime(); break;
+        case 11: D_prime(); break;
+
+        case 12: L2(); break;
+        case 13: R2(); break;
+        case 14: F2(); break;
+        case 15: B2(); break;
+        case 16: U2(); break;
+        case 17: D2(); break;
+    }
+}
+
+void Cube::unmove_indexed(int index)
+{
+    assert(index >= 0 && index <= 17);
+    
+    switch (index) {
+        case 0: L_prime(); break;
+        case 1: R_prime(); break;
+        case 2: F_prime(); break;
+        case 3: B_prime(); break;
+        case 4: U_prime(); break;
+        case 5: D_prime(); break;
+
+        case 6:  L(); break;
+        case 7:  R(); break;
+        case 8:  F(); break;
+        case 9:  B(); break;
+        case 10: U(); break;
+        case 11: D(); break;
+
+        case 12: L2(); break;
+        case 13: R2(); break;
+        case 14: F2(); break;
+        case 15: B2(); break;
+        case 16: U2(); break;
+        case 17: D2(); break;
+    };
+}
+
+const char* Cube::get_indexed_move_name(int index)
+{
+    assert(index >= 0 && index <= 17);
+    
+    switch (index) {
+        case 0: return "L";
+        case 1: return "R";
+        case 2: return "F";
+        case 3: return "B";
+        case 4: return "U";
+        case 5: return "D";
+
+        case 6:  return "L'";
+        case 7:  return "R'";
+        case 8:  return "F'";
+        case 9:  return "B'";
+        case 10: return "U'";
+        case 11: return "D'";
+
+        case 12: return "L2";
+        case 13: return "R2";
+        case 14: return "F2";
+        case 15: return "B2";
+        case 16: return "U2";
+        case 17: return "D2";
+    };
+}
 
 // Indices should be passed in opposite direction of the roration
 void Cube::rotate_face_90(int e1, int e2, int e3, int e4, int c1, int c2, int c3, int c4)
@@ -287,4 +412,3 @@ void Cube::B2()
 {
     rotate_face_180(2, 7, 10, 6, 3, 7, 6, 2);
 }
-

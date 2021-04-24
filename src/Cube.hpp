@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <string_view>
 
 /**
    *     WWW
@@ -28,14 +29,13 @@
    *    0   1   2   3   4   5   6   7
    *    UFR UFL UBL UBR DFR DFL DBL DBR
    *    WRB WRG WOG WOB YRB YRG YOG YOB
-   * 
 **/ 
 
 struct Cubie
 {
     uint8_t index;
 
-    // 0 is right, everything else is wrong
+    // 0 is good, everything else is bad
     uint8_t orientation;
 };
 
@@ -53,9 +53,20 @@ private:
 public:
     Cube();
 
-    void print();
+    void print() const;
     void move(const std::string& moves);
     void scramble(int num_rotations);
+    void restore();
+
+    int get_corner_orientation(int c_index) const;
+    int get_edge_orientation(int e_index) const;
+
+    int get_corner_index(int c_index) const;
+    int get_edge_index(int e_index) const;
+
+    void move_indexed(int index);
+    void unmove_indexed(int index);
+    const char* get_indexed_move_name(int index);
 
     void U();
     void D();
@@ -77,7 +88,6 @@ public:
     void R2();
     void F2();
     void B2();
-
 };
 
 #endif
