@@ -17,7 +17,7 @@ int main()
 
     Cube c;
 
-    // Scramble where G2 -> G3 takes very long (716 sec)
+    // Scramble where G2 -> G3 takes very long (716 sec on i5-3470)
     /*
     c.move("R' L2 B L' B R F' R U' L2 L D2 B R' B2 U2 D' "
     " L' U' R' D2 R L D2 U' R2 U' U2 R2 D2 F' R' R2 "

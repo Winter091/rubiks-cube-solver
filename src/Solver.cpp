@@ -25,42 +25,52 @@ bool move_is_unnecessary(int move, int prev_move) {
 
 void simplify_solution(std::vector<int>& s)
 {
-    int totally_arbitrary_number = 50;
+    while (true) {
+        bool something_changed = false;
 
-    for (int n = 0; n < totally_arbitrary_number; n++) {
         for (std::size_t i = 1; i < s.size(); i++) {
             int m1 = s[i - 1];
             int m2 = s[i];
-            
+
             for (int j = 0; j < 6; j++) {
                 // X + X2 -> X'
                 if (((m1 == j && m2 == j + 12) || (m1 == j + 12 && m2 == j))) {
                     s.erase(s.begin() + i);
                     s[i - 1] = j + 6;
+                    something_changed = true;
+                }
+
+                // X' + X2 -> X
+                else if (((m1 == j + 6 && m2 == j + 12) || (m1 == j + 12 && m2 == j + 6))) {
+                    s.erase(s.begin() + i);
+                    s[i - 1] = j;
+                    something_changed = true;
                 }
                 
                 // X + X' = nothing
                 else if (((m1 == j && m2 == j + 6) || (m1 == j + 6 && m2 == j))) {
                     s.erase(s.begin() + i - 1, s.begin() + i + 1);
+                    something_changed = true;
                 }
 
                 // X2 + X2 = nothing
                 else if ((m1 == m2) && (m1 == j + 12)) {
                     s.erase(s.begin() + i - 1, s.begin() + i + 1);
+                    something_changed = true;
                 }
             }
+
         }
+
+        if (!something_changed)
+            return;
     }
-    
 }
 
 bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
 {
-    if (limit == 0) {
-        if (goal->is_satisfied(c))
-            return true;
-        return false;
-    }
+    if (limit == 0)
+        return goal->is_satisfied(c);
 
     for (int move : goal->allowed_moves) {
         if (goal->moves_done.empty() || !move_is_unnecessary(move, goal->moves_done.back())) {
@@ -81,7 +91,7 @@ bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
 void iddfs(Cube& c, CubeGGoal* goal)
 {
     for (int limit = 0; /* limit without a limit */ ; limit++) {
-        std::cout << limit + 1 << ' ';
+        std::cout << limit << ' ';
         std::cout.flush();
 
         if (dls(c, goal, limit))

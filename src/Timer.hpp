@@ -19,7 +19,7 @@ public:
     {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - t.start);
-        std::cout << '['  << duration.count() / 1000.0 << " s]";
+        os << '['  << duration.count() / 1000.0 << " s]";
         return os;
     }
 };

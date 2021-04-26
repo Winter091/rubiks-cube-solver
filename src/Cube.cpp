@@ -15,7 +15,7 @@ Cube::Cube()
         corners[i] = { (uint8_t)i, 0 };
 }
 
-void Cube::print() const
+std::ostream& operator<<(std::ostream& os, const Cube& c)
 {
     const char* edge_lookup[12] = {
         "UF", "UL", "UB", "UR", 
@@ -28,26 +28,28 @@ void Cube::print() const
         "DFR", "DFL", "DBL", "DBR"
     };
     
-    std::cout << "Edges:\n";
+    os << "Edges:\n";
     for (int i = 0; i < 12; i++)
-        std::cout << edge_lookup[i] << ' ';
-    std::cout << '\n';
+        os << edge_lookup[i] << ' ';
+    os << '\n';
     for (int i = 0; i < 12; i++)
-        std::cout << edge_lookup[edges[i].index] << ' ';
-    std::cout << '\n';
+        os << edge_lookup[c.edges[i].index] << ' ';
+    os << '\n';
     for (int i = 0; i < 12; i++)
-        std::cout << (int)edges[i].orientation << "  ";
+        os << (int)c.edges[i].orientation << "  ";
 
-    std::cout << "\n\nCorners:\n";
+    os << "\n\nCorners:\n";
     for (int i = 0; i < 8; i++)
-        std::cout << corner_lookup[i] << ' ';
-    std::cout << '\n';
+        os << corner_lookup[i] << ' ';
+    os << '\n';
     for (int i = 0; i < 8; i++)
-        std::cout << corner_lookup[corners[i].index] << ' ';
-    std::cout << '\n';
+        os << corner_lookup[c.corners[i].index] << ' ';
+    os << '\n';
     for (int i = 0; i < 8; i++)
-        std::cout << (int)corners[i].orientation << "   ";
-    std::cout << "\n\n\n";  
+        os << (int)c.corners[i].orientation << "   ";
+    
+    os << "\n\n\n";
+    return os;
 }
 
 void Cube::move(const std::string& moves)

@@ -53,7 +53,7 @@ private:
 public:
     Cube();
 
-    void print() const;
+    friend std::ostream& operator<<(std::ostream& os, const Cube& c);
     void move(const std::string& moves);
     void scramble(int num_moves);
     void restore();
