@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include <string_view>
+#include <vector>
 
 Cube::Cube()
 {
@@ -13,6 +15,29 @@ Cube::Cube()
 
     for (int i = 0; i < 8; i++)
         corners[i] = { (uint8_t)i, 0 };
+}
+
+Cube::Cube(const char* filepath)
+{
+    std::ifstream file(filepath);
+    if (!file) {
+        std::cerr << "File " << filepath << " was not found.\n";
+        throw std::runtime_error("Cube::Cube: file was not found\n");
+    }
+
+    char colors[54];
+    int index = 0;
+    for ( ; index < 54; index++) {
+        file >> colors[index];
+        if (!file) {
+            std::cerr << "File \"" << filepath << "\" has less than 54 colors "
+                << "(only " << index << "), aborting\n";
+            throw std::runtime_error("Cube::Cube: bad number of colors\n");
+        }
+    }
+
+    file.close();
+    set_from_colors(colors);
 }
 
 std::ostream& operator<<(std::ostream& os, const Cube& c)
@@ -48,7 +73,6 @@ std::ostream& operator<<(std::ostream& os, const Cube& c)
     for (int i = 0; i < 8; i++)
         os << (int)c.corners[i].orientation << "   ";
     
-    os << "\n\n\n";
     return os;
 }
 
@@ -120,6 +144,175 @@ void Cube::restore()
 
     for (int i = 0; i < 8; i++)
         corners[i] = { (uint8_t)i, 0 };
+}
+
+void Cube::check_colors_array(char colors[54])
+{
+    // Check that red is in front, white is on top
+    if (colors[4] != 'W' || colors[25] != 'R') {
+        std::cerr << "Red should be in front, white on top!\n";
+        throw std::runtime_error{"Cube::check_colors_array: bad cube orientation"};
+    }
+    
+    auto map_to_index = [](char color) -> int {
+        switch (color) {
+            case 'W': return 0;
+            case 'G': return 1;
+            case 'R': return 2;
+            case 'B': return 3;
+            case 'O': return 4;
+            case 'Y': return 5;
+            default:  return 6;
+        }
+    };
+
+    char map_to_color[] = { 'W', 'G', 'R', 'B', 'O', 'Y' };
+    
+    // 0 1 2 3 4 5   6
+    // W G R B O Y Other
+    int color_counts[7] = {0};
+
+    // Check that there's exactly 9 tiles of each color
+    for (int i = 0; i < 54; i++)
+        color_counts[map_to_index(colors[i])]++;
+
+    for (int i = 0; i < 6; i++) {
+        if (color_counts[i] != 9) {
+            std::cerr << "Error in data: there's " << color_counts[i] 
+                << " '" << map_to_color[i] << "' tiles instead of 9!\n";
+            throw std::runtime_error("Cube::check_colors_array: bad number of colors\n");
+        }
+    }
+}
+
+void Cube::set_from_colors(char colors[54])
+{
+    check_colors_array(colors);
+    
+    int edge_indices[12][2] = {
+        {  7, 13 },   // UF 0
+        {  3, 10 },   // UL 1
+        {  1, 19 },   // UB 2 
+        {  5, 16 },   // UR 3
+        { 26, 27 },   // FR 4
+        { 24, 23 },   // FL 5
+        { 32, 21 },   // BL 6
+        { 30, 29 },   // BR 7
+        { 46, 37 },   // DF 8
+        { 48, 34 },   // DL 9
+        { 52, 43 },   // DB 10
+        { 50, 40 }    // DR 11
+    };
+
+    char edge_colors[12][2] = {
+        { 'W', 'R' },   // UF 0
+        { 'W', 'G' },   // UL 1
+        { 'W', 'O' },   // UB 2 
+        { 'W', 'B' },   // UR 3
+        { 'B', 'R' },   // FR 4
+        { 'G', 'R' },   // FL 5
+        { 'G', 'O' },   // BL 6
+        { 'O', 'B' },   // BR 7
+        { 'Y', 'R' },   // DF 8
+        { 'Y', 'G' },   // DL 9
+        { 'Y', 'O' },   // DB 10
+        { 'Y', 'B' }    // DR 11
+    };
+
+    // c1 is up/down for up/down layers and front/back for middle layer
+    auto get_edge_orientation = [](char c1, char c2) -> uint8_t {
+        if (c1 == 'G' || c1 == 'B')
+            return 1;
+        
+        if (c1 == 'R' || c1 == 'O')
+            if (c2 == 'W' || c2 == 'Y')
+                return 1;
+
+        return 0;
+    };
+
+    for (int i = 0; i < 12; i++) {
+        char c1 = colors[edge_indices[i][0]];
+        char c2 = colors[edge_indices[i][1]];
+
+        for (int j = 0; j < 12; j++) {
+            if ((c1 == edge_colors[j][0] && c2 == edge_colors[j][1])
+             || (c1 == edge_colors[j][1] && c2 == edge_colors[j][0])) {
+                 edges[i] = { (uint8_t)j, get_edge_orientation(c1, c2) };
+                 break;
+            }
+        }
+    }
+
+    int corner_indices[8][3] = {
+        {  8, 15, 14 },     // UFR 0
+        {  6, 11, 12 },     // UFL 1
+        {  0,  9, 20 },     // UBL 2
+        {  2, 17, 18 },     // UBR 3
+        { 47, 39, 38 },     // DFR 4
+        { 45, 35, 36 },     // DFL 5
+        { 51, 33, 44 },     // DBL 6
+        { 53, 41, 42 }      // DBR 7
+    };
+
+    char corner_colors[8][3] = {
+        { 'W', 'R', 'B' },     // UFR 0
+        { 'W', 'R', 'G' },     // UFL 1
+        { 'W', 'G', 'O' },     // UBL 2
+        { 'W', 'O', 'B' },     // UBR 3
+        { 'Y', 'R', 'B' },     // DFR 4
+        { 'Y', 'R', 'G' },     // DFL 5
+        { 'Y', 'G', 'O' },     // DBL 6
+        { 'Y', 'O', 'B' }      // DBR 7
+    };
+
+    auto get_corner_orientation = [](int index, char c1, char c2, char c3) -> uint8_t {
+        if (c1 == 'W' || c1 == 'Y')
+            return 0;
+        
+        switch (index) {
+            case 2: 
+            case 0:
+            case 7:
+            case 5:
+                return (c2 == 'W' || c2 == 'Y') ? 1 : 2;
+            
+            case 1:
+            case 3:
+            case 4:
+            case 6:
+                return (c3 == 'W' || c3 == 'Y') ? 1 : 2;
+        }
+
+        return 255;
+    };
+
+    auto get_corner_index = [corner_colors](char c1, char c2, char c3) -> uint8_t {
+        std::vector<char> perms = { c1, c2, c3 };
+
+        std::sort(perms.begin(), perms.end());
+        
+        do {
+            for (int i = 0; i < 8; i++) {
+                if (perms[0] == corner_colors[i][0] && perms[1] == corner_colors[i][1] 
+                 && perms[2] == corner_colors[i][2])
+                    return i;
+            }
+        } while (std::next_permutation(perms.begin(), perms.end()));
+
+        return 255;
+    };
+
+    for (int i = 0; i < 8; i++) {
+        char c1 = colors[corner_indices[i][0]];
+        char c2 = colors[corner_indices[i][1]];
+        char c3 = colors[corner_indices[i][2]];
+
+        uint8_t index = get_corner_index(c1, c2, c3);
+        uint8_t orientation = get_corner_orientation(i, c1, c2, c3);
+
+        corners[i] = { index, orientation };
+    }
 }
 
 int Cube::get_corner_orientation(int c_index) const

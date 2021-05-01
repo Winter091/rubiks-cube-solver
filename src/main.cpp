@@ -11,11 +11,29 @@
 #include "Cube.hpp"
 #include "Solver.hpp"
 
-int main()
+int main(int argc, const char* argv[])
 {
     std::srand(std::time(0));
 
-    Cube c;
+    std::vector<int> solution;
+
+    if (argc < 2) {
+        std::cout << "Solving random scramble...\n";
+        Cube c;
+        c.scramble(40);
+
+        solution = find_solution(c);
+    } else {
+        std::cout << "Solving cube from file...\n";
+        Cube c{argv[1]};
+
+        solution = find_solution(c);
+    }
+
+    std::cout << "The found solution has length " << solution.size() << ":\n";
+    for (int move : solution)
+        std::cout << Cube::get_indexed_move_name(move) << ' ';
+    std::cout << '\n';
 
     // Scramble where G2 -> G3 takes very long (716 sec on i5-3470)
     /*
@@ -26,7 +44,4 @@ int main()
     " R2 L B L' D F' F L2 L' R2 L2 R' F' F B2 R2 F "
     " L' B R' B L L2 U2 D' F R' D' F B U B L");
     */
-   
-    c.scramble(100);
-    find_solution(c);
 }

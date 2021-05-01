@@ -18,8 +18,8 @@ class CubeG0_G1Goal : public CubeGGoal
 public:
     CubeG0_G1Goal()
     {
-        // All quarter turns
-        for (int i = 0; i < 12; i++)
+        // All turns
+        for (int i = 0; i < 18; i++)
             allowed_moves.push_back(i);
     }
 
@@ -154,6 +154,6 @@ public:
     }
 };
 
-void find_solution(Cube c);
+std::vector<int> find_solution(Cube c);
 
 #endif

@@ -20,6 +20,19 @@
    *     YYY
    *     YYY
    * 
+   * 
+   *            00 01 02
+   *            03 04 05
+   *            06 07 08
+   * 
+   * 09 10 11   12 13 14   15 16 17   18 19 20
+   * 21 22 23   24 25 26   27 28 29   30 31 32
+   * 33 34 35   36 37 38   39 40 41   42 43 44
+   * 
+   *            45 46 47
+   *            48 49 50
+   *            51 52 53
+   * 
    * Edge orientations and colors:
    *    0  1  2  3  4  5  6  7  8  9  10 11
    *    UF UL UB UR FR FL BL BR DF DL DB DR
@@ -52,11 +65,14 @@ private:
 
 public:
     Cube();
+    Cube(const char* filepath);
 
     friend std::ostream& operator<<(std::ostream& os, const Cube& c);
     void move(const std::string& moves);
     void scramble(int num_moves);
     void restore();
+    void check_colors_array(char colors[54]);
+    void set_from_colors(char colors[54]);
 
     int get_corner_orientation(int c_index) const;
     int get_edge_orientation(int e_index) const;
@@ -66,7 +82,7 @@ public:
 
     void move_indexed(int index);
     void unmove_indexed(int index);
-    const char* get_indexed_move_name(int index);
+    static const char* get_indexed_move_name(int index);
 
     void U();
     void D();

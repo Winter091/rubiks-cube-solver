@@ -100,7 +100,7 @@ void iddfs(Cube& c, CubeGGoal* goal)
 }
 
 // Make a copy of the input cube
-void find_solution(Cube c)
+std::vector<int> find_solution(Cube c)
 {
     std::vector<int> cube_solution;
     std::vector<CubeGGoal*> goals = {
@@ -123,20 +123,6 @@ void find_solution(Cube c)
     }
 
     std::cout << "\nThe entire solution took " << t_outer << '\n';
-    std::cout << "The found solution has length " 
-        << cube_solution.size() << ":\n";
-
-    for (int move : cube_solution)
-        std::cout << c.get_indexed_move_name(move) << ' ';
-    std::cout << '\n';
-
-    std::size_t old_len = cube_solution.size();
     simplify_solution(cube_solution);
-    if (old_len != cube_solution.size()) {
-        std::cout << "There's a simplified version with length " 
-            << cube_solution.size() << ":\n";
-        for (int move : cube_solution)
-            std::cout << c.get_indexed_move_name(move) << ' ';
-        std::cout << '\n';
-    }
+    return cube_solution;
 }

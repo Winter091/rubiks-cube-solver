@@ -1,0 +1,23 @@
+    BGO
+    OWR
+    WYR
+
+RBO GBG YYY GOW 
+OGO WRW GBW ROY
+OGW RBW OGB YRB
+
+    GWB
+    RYY
+    YBR
+
+This program works with particular set of colors:
+    W - White
+    G - Green
+    R - Red
+    B - Blue
+    O - Orange
+    Y - Yellow
+
+Format is pretty staightforward. Only first 54 non-space 
+characters are considered, so here you can write comments.
+Red side should be in front, white on top.
