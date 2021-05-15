@@ -5,24 +5,6 @@
 #include <iostream>
 #include <memory>
 
-bool move_is_unnecessary(int move, int prev_move) {
-    // If first letter of the move is the same
-    for (int i = 0; i < 6; i++) {
-        if ((move == i || move == 6 + i || move == 12 + i)
-        && (prev_move == i || prev_move == 6 + i || prev_move == 12 + i))
-            return true;
-    }
-
-    // L R and simular things
-    for (int i = 0; i <= 4; i += 2) {
-        if ((move == i || move == 6 + i || move == 12 + i)
-         && (prev_move == i + 1 || prev_move == 6 + i + 1 || prev_move == 12 + i + 1))
-            return true;
-    }
-
-    return false;
-}
-
 void simplify_solution(std::vector<int>& s)
 {
     while (true) {
@@ -73,7 +55,7 @@ bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
         return goal->is_satisfied(c);
 
     for (int move : goal->allowed_moves) {
-        if (goal->moves_done.empty() || !move_is_unnecessary(move, goal->moves_done.back())) {
+        if (goal->moves_done.empty() || !Cube::move_is_unnecessary(move, goal->moves_done.back())) {
             c.move_indexed(move);
             goal->moves_done.push_back(move);
 

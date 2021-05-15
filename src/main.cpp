@@ -15,20 +15,17 @@ int main(int argc, const char* argv[])
 {
     std::srand(std::time(0));
 
-    std::vector<int> solution;
-
+    Cube c;
+    
     if (argc < 2) {
         std::cout << "Solving random scramble...\n";
-        Cube c;
-        c.scramble(40);
-
-        solution = find_solution(c);
+        c.scramble(25);
     } else {
         std::cout << "Solving cube from file...\n";
-        Cube c{argv[1]};
-
-        solution = find_solution(c);
+        c.set_from_file(argv[1]);
     }
+
+    std::vector<int> solution = find_solution(c);
 
     std::cout << "The found solution has length " << solution.size() << ":\n";
     for (int move : solution)

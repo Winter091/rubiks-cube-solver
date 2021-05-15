@@ -19,25 +19,7 @@ Cube::Cube()
 
 Cube::Cube(const char* filepath)
 {
-    std::ifstream file(filepath);
-    if (!file) {
-        std::cerr << "File " << filepath << " was not found.\n";
-        throw std::runtime_error("Cube::Cube: file was not found\n");
-    }
-
-    char colors[54];
-    int index = 0;
-    for ( ; index < 54; index++) {
-        file >> colors[index];
-        if (!file) {
-            std::cerr << "File \"" << filepath << "\" has less than 54 colors "
-                << "(only " << index << "), aborting\n";
-            throw std::runtime_error("Cube::Cube: bad number of colors\n");
-        }
-    }
-
-    file.close();
-    set_from_colors(colors);
+    set_from_file(filepath);
 }
 
 std::ostream& operator<<(std::ostream& os, const Cube& c)
@@ -109,7 +91,7 @@ void Cube::move(const std::string& moves)
         else if (move == "U2") U2();
 
         else
-            std::cerr << "Unrecognized move : " << move << '\n';
+            std::cerr << "Unrecognized move: " << move << '\n';
     }
 
 }
@@ -125,12 +107,16 @@ void Cube::scramble(int num_moves)
     std::string curr_move;
     int prev = -1;
     for (int i = 0; i < num_moves; i++) {
-        // Make sure there's at least no repeated moves
-        int rand;
-        while ((rand = std::rand() % 18) == prev);
-        prev = rand;
+        // Make sure there's no unnecessary moves
+        int move;
+        while (true) {
+            move = std::rand() % 18;
+            if (!Cube::move_is_unnecessary(move, prev))
+                break;
+        }
+        prev = move;
         
-        curr_move.append(possible_moves[rand]);
+        curr_move.append(possible_moves[move]);
     }
     
     std::cout << "Scrambling cube using " << num_moves << " moves:\n" << curr_move << "\n\n";
@@ -315,6 +301,28 @@ void Cube::set_from_colors(char colors[54])
     }
 }
 
+void Cube::set_from_file(const char* filepath)
+{
+    std::ifstream file(filepath);
+    if (!file) {
+        std::cerr << "File " << filepath << " was not found.\n";
+        throw std::runtime_error("Cube::Cube: file was not found\n");
+    }
+
+    char colors[54];
+    for (int index = 0; index < 54; index++) {
+        file >> colors[index];
+        if (!file) {
+            std::cerr << "File \"" << filepath << "\" has less than 54 colors "
+                << "(only " << index << "), aborting\n";
+            throw std::runtime_error("Cube::Cube: bad number of colors\n");
+        }
+    }
+
+    file.close();
+    set_from_colors(colors);
+}
+
 int Cube::get_corner_orientation(int c_index) const
 {
     assert(c_index >= 0 && c_index <= 7);
@@ -423,6 +431,24 @@ const char* Cube::get_indexed_move_name(int index)
     };
 
     return "How did we get here?";
+}
+
+bool Cube::move_is_unnecessary(int move, int prev_move) {
+    // If first letter of the move is the same
+    for (int i = 0; i < 6; i++) {
+        if ((move == i || move == 6 + i || move == 12 + i)
+        && (prev_move == i || prev_move == 6 + i || prev_move == 12 + i))
+            return true;
+    }
+
+    // L R and simular things
+    for (int i = 0; i <= 4; i += 2) {
+        if ((move == i || move == 6 + i || move == 12 + i)
+         && (prev_move == i + 1 || prev_move == 6 + i + 1 || prev_move == 12 + i + 1))
+            return true;
+    }
+
+    return false;
 }
 
 // Indices should be passed in opposite direction of the roration
