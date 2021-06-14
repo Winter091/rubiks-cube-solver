@@ -155,5 +155,6 @@ public:
 };
 
 std::vector<int> find_solution(Cube c);
+std::vector<int> find_solution_parallel(Cube c);
 
 #endif
