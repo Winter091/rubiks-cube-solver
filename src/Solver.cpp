@@ -51,21 +51,23 @@ void simplify_solution(std::vector<int>& s)
     }
 }
 
+std::atomic<bool> solution_found;
+std::vector<int> solution;
 
-bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
+bool dls_sequental(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
 {
     if (limit == 0)
         return goal->is_satisfied(c);
 
     for (int move : goal->allowed_moves) {
-        if (goal->moves_done.empty() || !Cube::move_is_unnecessary(move, goal->moves_done.back())) {
+        if (moves_done.empty() || !Cube::move_is_unnecessary(move, moves_done.back())) {
             c.move_indexed(move);
-            goal->moves_done.push_back(move);
+            moves_done.push_back(move);
 
-            if (dls(c, goal, limit - 1))
+            if (dls_sequental(c, goal, moves_done, limit - 1))
                 return true;
             
-            goal->moves_done.pop_back();
+            moves_done.pop_back();
             c.unmove_indexed(move);
         }
     }
@@ -73,46 +75,46 @@ bool dls(Cube& c, CubeGGoal* goal, int8_t limit)
     return false;
 }
 
-void iddfs(Cube& c, CubeGGoal* goal)
+void iddfs_sequental(Cube& c, CubeGGoal* goal)
 {
-    for (int limit = 0;  ; limit++) {
-        //std::cout << limit << ' ';
-        //std::cout.flush();
-
-        if (dls(c, goal, limit))
+    std::vector<int> moves_done;
+    
+    for (int limit = 0; /* limit without a limit */ ; limit++) {
+        if (dls_sequental(c, goal, moves_done, limit)) {
+            solution = std::move(moves_done);
             return;
+        }
     }
 }
 
-std::atomic<bool> solution_found;
-std::vector<int> solution;
-
-bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves, int8_t limit)
+bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
 {
+    // Return if another thread has found the solution
     if (solution_found)
         return true;
     
-    if (limit == 0) {
-        if (solution_found)
-            return true;
-        
+    if (limit == 0) {        
         if (!goal->is_satisfied(c))
             return false;
+
+        // Return if another thread has found the solution
+        // while this one was checking goal->is_satisfied()
+        if (std::atomic_exchange(&solution_found, true))
+            return true;
         
-        solution_found = true;
-        solution = moves;
+        solution = std::move(moves_done);
         return true;
     }
 
     for (int move : goal->allowed_moves) {
-        if (moves.empty() || !Cube::move_is_unnecessary(move, moves.back())) {
+        if (moves_done.empty() || !Cube::move_is_unnecessary(move, moves_done.back())) {
             c.move_indexed(move);
-            moves.push_back(move);
+            moves_done.push_back(move);
 
-            if (dls_parallel(c, goal, moves, limit - 1))
+            if (dls_parallel(c, goal, moves_done, limit - 1))
                 return true;
             
-            moves.pop_back();
+            moves_done.pop_back();
             c.unmove_indexed(move);
         }
     }
@@ -120,31 +122,29 @@ bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves, int8_t limi
     return false;
 }
 
-void thread_work(std::vector<Cube> starting_cubes, 
+void iddfs_parallel_impl(std::vector<Cube> starting_cubes, 
     std::vector<std::vector<int>> starting_moves, CubeGGoal* goal)
 {
-    for (int depth = 0; ; depth++) {
+    for (int limit = 0; /* limit without a limit */ ; limit++) {
         for (std::size_t i = 0; i < starting_cubes.size(); i++)
-            if (dls_parallel(starting_cubes[i], goal, starting_moves[i], depth))
+            if (dls_parallel(starting_cubes[i], goal, starting_moves[i], limit))
                 return;
     }
 }
 
-void iddfs_parallel(Cube& c, CubeGGoal* goal)
+void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned int num_threads)
 {
     solution_found = false;
     solution.clear();
 
-    if (goal->is_satisfied(c)) {
+    if (goal->is_satisfied(c))
         return;
-    }
     
-    int num_threads = 6;
     int cubes_per_thread = goal->allowed_moves.size() / num_threads;
 
     std::vector<std::thread> threads;
     std::size_t curr_move_index = 0;
-    for (int i = 0; i < num_threads - 1; i++) {
+    for (unsigned int i = 0; i < num_threads - 1; i++) {
 
         std::vector<Cube> starting_cubes;
         std::vector<std::vector<int>> starting_moves;
@@ -156,7 +156,7 @@ void iddfs_parallel(Cube& c, CubeGGoal* goal)
             starting_moves.back().push_back(goal->allowed_moves[curr_move_index++]);
         }
 
-        threads.emplace_back(thread_work, std::move(starting_cubes),
+        threads.emplace_back(iddfs_parallel_impl, std::move(starting_cubes),
                             std::move(starting_moves), goal);
     }
 
@@ -168,75 +168,55 @@ void iddfs_parallel(Cube& c, CubeGGoal* goal)
         starting_cubes.push_back(new_c);
         starting_moves.push_back(std::vector<int>{});
         starting_moves.back().push_back(goal->allowed_moves[curr_move_index++]);
-
-        //std::cout << '\n' << new_c << '\n';
     }
 
-    thread_work(std::move(starting_cubes), std::move(starting_moves), goal);
+    iddfs_parallel_impl(std::move(starting_cubes), std::move(starting_moves), goal);
+
+    for (int move : solution) 
+        c.move_indexed(move);
 
     for (auto& t: threads)
         t.join();
 }
 
 // Make a copy of the input cube
-std::vector<int> find_solution_parallel(Cube c)
+std::vector<int> find_solution(Cube c, algo_type type)
 {
     std::vector<int> cube_solution;
-    std::vector<CubeGGoal*> goals = {
-        new CubeG0_G1Goal{},
-        new CubeG1_G2Goal{},
-        new CubeG2_G3Goal{},
-        new CubeG3_G4Goal{}
+    std::vector<CubeGGoal*> static goals = {
+        new CubeG0_G1Goal,
+        new CubeG1_G2Goal,
+        new CubeG2_G3Goal,
+        new CubeG3_G4Goal
     };
+    
+    unsigned int static num_threads 
+        = std::max(std::thread::hardware_concurrency(), 1u);
+
+    if (type == algo_type::decide_best) {
+        if (num_threads < 2)
+            type = algo_type::sequental;
+        else 
+            type = algo_type::parallel;
+    }
     
     Timer t_outer;
     for (int i = 0; i < 4; i++) {
-        //std::cout << "Solving G" << i << " -> G" << i + 1 << ": ";
+        std::cout << "Solving G" << i << " -> G" << i + 1 << "...";
+        std::cout.flush();
 
-        Timer t_inner;
-        iddfs_parallel(c, goals[i]);
-        //std::cout << t_inner << '\n';
+        if (type == algo_type::sequental)
+            iddfs_sequental(c, goals[i]);
+        else
+            iddfs_parallel(c, goals[i], num_threads);
 
         cube_solution.insert(cube_solution.end(), 
             solution.begin(), solution.end());
 
-        for (int move : solution) {
-            c.move_indexed(move);
-            //std::cout << c.get_indexed_move_name(move) << ' ';
-        }
-
-        //std::cout << '\n';
+        std::cout << '\n';
     }
 
-    //std::cout << "\nThe entire solution took " << t_outer << '\n';
-    simplify_solution(cube_solution);
-    return cube_solution;
-}
-
-// Make a copy of the input cube
-std::vector<int> find_solution(Cube c)
-{
-    std::vector<int> cube_solution;
-    std::vector<CubeGGoal*> goals = {
-        new CubeG0_G1Goal{},
-        new CubeG1_G2Goal{},
-        new CubeG2_G3Goal{},
-        new CubeG3_G4Goal{}
-    };
-    
-    Timer t_outer;
-    for (int i = 0; i < 4; i++) {
-        //std::cout << "Solving G" << i << " -> G" << i + 1 << ": ";
-
-        Timer t_inner;
-        iddfs(c, goals[i]);
-        //std::cout << t_inner << '\n';
-
-        cube_solution.insert(cube_solution.end(), 
-            goals[i]->moves_done.begin(), goals[i]->moves_done.end());
-    }
-
-    //std::cout << "\nThe entire solution took " << t_outer << '\n';
+    std::cout << "\nThe entire solution took " << t_outer << '\n';
     simplify_solution(cube_solution);
     return cube_solution;
 }

@@ -8,7 +8,6 @@
 class CubeGGoal
 {
 public:
-    std::vector<int> moves_done;
     std::vector<int> allowed_moves;
     virtual bool is_satisfied(const Cube& c) = 0;
 };
@@ -154,7 +153,12 @@ public:
     }
 };
 
-std::vector<int> find_solution(Cube c);
-std::vector<int> find_solution_parallel(Cube c);
+enum class algo_type : std::uint8_t {
+    sequental   = 1,
+    parallel    = 2,
+    decide_best = 3
+};
+
+std::vector<int> find_solution(Cube c, algo_type type);
 
 #endif

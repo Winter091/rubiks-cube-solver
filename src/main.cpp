@@ -33,9 +33,10 @@ std::pair<double, double> measure_time()
     Cube c2 = c;
 
     double time1;
+    std::cout << "\nSequental:\n";
     {
         Timer t;
-        std::vector<int> solution = find_solution(c1);
+        std::vector<int> solution = find_solution(c1, algo_type::sequental);
         time1 = t.get_time() / 1000.0;
 
         for (int move : solution)
@@ -47,11 +48,13 @@ std::pair<double, double> measure_time()
             std::exit(0);
         }
     }
+    std::cout <<'\n';
 
     double time2;
+    std::cout << "\nParallel:\n";
     {
         Timer t;
-        std::vector<int> solution = find_solution_parallel(c2);
+        std::vector<int> solution = find_solution(c2, algo_type::parallel);
         time2 = t.get_time() / 1000.0;
 
         for (int move : solution)
@@ -63,6 +66,7 @@ std::pair<double, double> measure_time()
             std::exit(0);
         }
     }
+    std::cout << '\n';
 
     return std::make_pair(time1, time2);
 }
@@ -71,47 +75,20 @@ int main(int argc, const char *argv[])
 {
     std::srand(std::time(0));
 
-    std::size_t const count = 25;
-
-    std::vector<std::size_t> X;
-    X.reserve(count);
-
-    std::vector<double> seq_times, par_times;
-    seq_times.reserve(X.size());
-    par_times.reserve(X.size());
+    Cube c;
     
-    for (std::size_t i = 0; i < count; i++) {
-
-        auto [seq, par] = measure_time();
-        std::cout << i << '\n';
-
-        X.push_back(i);
-        seq_times.push_back(seq);
-        par_times.push_back(par);
+    if (argc < 2) {
+        std::cout << "Solving random scramble...\n";
+        c.scramble(25);
+    } else {
+        std::cout << "Solving cube from file...\n";
+        c.set_from_file(argv[1]);
     }
 
-    auto print_vec = [](std::ostream& os, auto const& vec, const char* name) {
-        os << name << " = [";
-        for (auto elem : vec) {
-            os << elem << ", ";
-        }
-        os << "]\n";
-    };
+    std::vector<int> solution = find_solution(c, algo_type::decide_best);
 
-    std::ofstream out_file{"data.txt"};
-    print_vec(out_file, X, "X");
-    print_vec(out_file, seq_times, "seq_times");
-    print_vec(out_file, par_times, "par_times");
-
-    return 0;
-
-    // Scramble where G2 -> G3 takes very long (716 sec on i5-3470)
-    /*
-    c.move("R' L2 B L' B R F' R U' L2 L D2 B R' B2 U2 D' "
-    " L' U' R' D2 R L D2 U' R2 U' U2 R2 D2 F' R' R2 "
-    " B2 D' D2 U2 L2 L D' U' D F' F2 U' L R' B L' B "
-    " L' D U' F R2 F' U' B2 B B' U2 D' D F2 F L U' "
-    " R2 L B L' D F' F L2 L' R2 L2 R' F' F B2 R2 F "
-    " L' B R' B L L2 U2 D' F R' D' F B U B L");
-    */
+    std::cout << "The found solution has length " << solution.size() << ":\n";
+    for (int move : solution)
+        std::cout << Cube::get_indexed_move_name(move) << ' ';
+    std::cout << '\n';
 }
