@@ -6,6 +6,7 @@
 #include <memory>
 #include <atomic>
 #include <thread>
+#include <algorithm>
 
 void simplify_solution(std::vector<int>& s)
 {
@@ -52,7 +53,7 @@ void simplify_solution(std::vector<int>& s)
 }
 
 std::atomic<bool> solution_found;
-std::vector<int> solution;
+std::vector<int> curr_goal_solution;
 
 bool dls_sequental(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
 {
@@ -81,7 +82,7 @@ void iddfs_sequental(Cube& c, CubeGGoal* goal)
     
     for (int limit = 0; /* limit without a limit */ ; limit++) {
         if (dls_sequental(c, goal, moves_done, limit)) {
-            solution = std::move(moves_done);
+            curr_goal_solution = std::move(moves_done);
             return;
         }
     }
@@ -102,7 +103,7 @@ bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t
         if (std::atomic_exchange(&solution_found, true))
             return true;
         
-        solution = std::move(moves_done);
+        curr_goal_solution = std::move(moves_done);
         return true;
     }
 
@@ -122,6 +123,8 @@ bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t
     return false;
 }
 
+// This IDDFS recieves a couple of "top" nodes of a tree,
+// not just one, so it has to traverse all of them for each depth limit
 void iddfs_parallel_impl(std::vector<Cube> starting_cubes, 
     std::vector<std::vector<int>> starting_moves, CubeGGoal* goal)
 {
@@ -132,37 +135,59 @@ void iddfs_parallel_impl(std::vector<Cube> starting_cubes,
     }
 }
 
-void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned int num_threads)
+void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned num_threads)
 {
     solution_found = false;
-    solution.clear();
+    curr_goal_solution.clear();
 
     if (goal->is_satisfied(c))
         return;
-    
-    int cubes_per_thread = goal->allowed_moves.size() / num_threads;
 
     std::vector<std::thread> threads;
-    std::size_t curr_move_index = 0;
-    for (unsigned int i = 0; i < num_threads - 1; i++) {
 
-        std::vector<Cube> starting_cubes;
-        std::vector<std::vector<int>> starting_moves;
-        for (int j = 0; j < cubes_per_thread; j++) {
-            Cube new_c = c;
-            new_c.move_indexed(goal->allowed_moves[curr_move_index]);
-            starting_cubes.push_back(new_c);
+    // Start IDDFS from depth = 1, so we have 
+    // 18/14/10/6 (dependent on current goal) 
+    // different cubes (nodes) to work with
+    std::vector<Cube> starting_cubes;
+    std::vector<std::vector<int>> starting_moves;
+
+    double cubes_per_thread 
+        = static_cast<double>(goal->allowed_moves.size()) / num_threads;
+    
+    std::size_t curr_move_index = 0;
+    unsigned cubes_started_total = 0;
+    double curr_sum = 0.0;
+
+    // Start other threads
+    for (unsigned i = 0; i < num_threads - 1; i++) {
+        
+        // Determine amount of nodes for this thread
+        curr_sum += cubes_per_thread;
+        unsigned this_thread_count = curr_sum - cubes_started_total;
+        cubes_started_total += this_thread_count;
+
+        // Don't create threads that don't 
+        // have work to do. Brilliant!
+        if (this_thread_count == 0)
+            continue;
+
+        for (unsigned j = 0; j < this_thread_count; j++, curr_move_index++) {
+            Cube copy = c;
+            copy.move_indexed(goal->allowed_moves[curr_move_index]);
+            starting_cubes.push_back(copy);
             starting_moves.push_back(std::vector<int>{});
-            starting_moves.back().push_back(goal->allowed_moves[curr_move_index++]);
+            starting_moves.back().push_back(goal->allowed_moves[curr_move_index]);
         }
 
         threads.emplace_back(iddfs_parallel_impl, std::move(starting_cubes),
                             std::move(starting_moves), goal);
+
+        starting_cubes.clear();
+        starting_moves.clear();
     }
 
-    std::vector<Cube> starting_cubes;
-    std::vector<std::vector<int>> starting_moves;
-    while (curr_move_index < goal->allowed_moves.size()) {
+    // Start IDDFS on this thread
+    for (; cubes_started_total < goal->allowed_moves.size(); cubes_started_total++) {
         Cube new_c = c;
         new_c.move_indexed(goal->allowed_moves[curr_move_index]);
         starting_cubes.push_back(new_c);
@@ -172,7 +197,7 @@ void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned int num_threads)
 
     iddfs_parallel_impl(std::move(starting_cubes), std::move(starting_moves), goal);
 
-    for (int move : solution) 
+    for (int move : curr_goal_solution) 
         c.move_indexed(move);
 
     for (auto& t: threads)
@@ -190,8 +215,11 @@ std::vector<int> find_solution(Cube c, algo_type type)
         new CubeG3_G4Goal
     };
     
+    // More than 18 threads won't give a performance 
+    // boost, because IDDFS with depth = 1 splits 
+    // on 18 nodes at max
     unsigned int static num_threads 
-        = std::max(std::thread::hardware_concurrency(), 1u);
+        = std::clamp(std::thread::hardware_concurrency(), 1u, 18u);
 
     if (type == algo_type::decide_best) {
         if (num_threads < 2)
@@ -200,7 +228,7 @@ std::vector<int> find_solution(Cube c, algo_type type)
             type = algo_type::parallel;
     }
     
-    Timer t_outer;
+    Timer timer;
     for (int i = 0; i < 4; i++) {
         std::cout << "Solving G" << i << " -> G" << i + 1 << "...";
         std::cout.flush();
@@ -211,12 +239,12 @@ std::vector<int> find_solution(Cube c, algo_type type)
             iddfs_parallel(c, goals[i], num_threads);
 
         cube_solution.insert(cube_solution.end(), 
-            solution.begin(), solution.end());
+            curr_goal_solution.begin(), curr_goal_solution.end());
 
         std::cout << '\n';
     }
+    std::cout << "\nThe entire solution took " << timer << '\n';
 
-    std::cout << "\nThe entire solution took " << t_outer << '\n';
     simplify_solution(cube_solution);
     return cube_solution;
 }

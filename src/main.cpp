@@ -79,13 +79,14 @@ int main(int argc, const char *argv[])
     
     if (argc < 2) {
         std::cout << "Solving random scramble...\n";
-        c.scramble(25);
+        c.scramble(100);
     } else {
         std::cout << "Solving cube from file...\n";
         c.set_from_file(argv[1]);
     }
 
-    std::vector<int> solution = find_solution(c, algo_type::decide_best);
+    // Run parallel version of the algorithm
+    std::vector<int> solution = find_solution(c, algo_type::parallel);
 
     std::cout << "The found solution has length " << solution.size() << ":\n";
     for (int move : solution)

@@ -153,12 +153,13 @@ public:
     }
 };
 
+// Request sequental, parallel or any version of the algorithm
 enum class algo_type : std::uint8_t {
-    sequental   = 1,
-    parallel    = 2,
-    decide_best = 3
+    sequental,
+    parallel,
+    decide_best
 };
 
-std::vector<int> find_solution(Cube c, algo_type type);
+std::vector<int> find_solution(Cube c, algo_type type = algo_type::decide_best);
 
 #endif
