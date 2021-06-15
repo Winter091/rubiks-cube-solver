@@ -52,10 +52,10 @@ void simplify_solution(std::vector<int>& s)
     }
 }
 
-std::atomic<bool> solution_found;
-std::vector<int> curr_goal_solution;
+std::atomic<bool> static solution_found;
+std::vector<int>  static curr_goal_solution;
 
-bool dls_sequental(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
+bool static dls_sequental(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
 {
     if (limit == 0)
         return goal->is_satisfied(c);
@@ -76,7 +76,7 @@ bool dls_sequental(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_
     return false;
 }
 
-void iddfs_sequental(Cube& c, CubeGGoal* goal)
+void static iddfs_sequental(Cube& c, CubeGGoal* goal)
 {
     std::vector<int> moves_done;
     
@@ -88,7 +88,7 @@ void iddfs_sequental(Cube& c, CubeGGoal* goal)
     }
 }
 
-bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
+bool static dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t limit)
 {
     // Return if another thread has found the solution
     if (solution_found)
@@ -125,7 +125,7 @@ bool dls_parallel(Cube& c, CubeGGoal* goal, std::vector<int>& moves_done, int8_t
 
 // This IDDFS recieves a couple of "top" nodes of a tree,
 // not just one, so it has to traverse all of them for each depth limit
-void iddfs_parallel_impl(std::vector<Cube> starting_cubes, 
+void static iddfs_parallel_impl(std::vector<Cube> starting_cubes, 
     std::vector<std::vector<int>> starting_moves, CubeGGoal* goal)
 {
     for (int limit = 0; /* limit without a limit */ ; limit++) {
@@ -135,7 +135,7 @@ void iddfs_parallel_impl(std::vector<Cube> starting_cubes,
     }
 }
 
-void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned num_threads)
+void static iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned num_threads)
 {
     solution_found = false;
     curr_goal_solution.clear();
@@ -204,7 +204,6 @@ void iddfs_parallel(Cube& c, CubeGGoal* goal, unsigned num_threads)
         t.join();
 }
 
-// Make a copy of the input cube
 std::vector<int> find_solution(Cube c, algo_type type)
 {
     std::vector<int> cube_solution;
