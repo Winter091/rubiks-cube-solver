@@ -20,5 +20,5 @@ found the answer, all remaining stop their work.
 I haven't yet done the extensive testing, but it seems that the performance
 boost when using parallel version is something like (0.72 * thread_count) 
 times, compared to non-parallel version. Specifically, on 6-core ryzen 5
-4500u, it's 4.34x faster, thus making this implementation very fast
-compared to others (3-4 seconds avg to find the solution).
+4500u, it's 4.34x faster, thus making this implementation ~~very fast
+compared to others~~ not slow, at least (3-4 seconds avg to find the solution).
