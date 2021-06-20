@@ -54,11 +54,10 @@ public:
                 return false;
         
         // Edges 4, 5, 6, 7 should be on positions 4, 5, 6, 7
-        int lookup[] = {4, 5, 6, 7};
+        int const lookup[] = {4, 5, 6, 7};
         for (int i = 0; i < 4; i++) {
             int index = c.get_edge_index(lookup[i]);
-
-            if (index != 4 && index != 5 && index != 6 && index != 7)
+            if (index < 4 || index > 7)
                 return false;
         }
 
@@ -109,15 +108,14 @@ public:
         int lookup[] = {0, 2, 8, 10};
         for (int i = 0; i < 4; i++) {
             int index = c.get_edge_index(lookup[i]);
-
             if (index != 0 && index != 2 && index != 8 && index != 10)
                 return false;
         }
 
         //Parity must be even
         uint8_t parity = 0;
-        uint8_t order[] = {2, 3, 0, 1, 5, 6, 7, 4};
-        uint8_t order_reverse[] = {2, 3, 0, 1, 7, 4, 5, 6};
+        uint8_t const order[] = {2, 3, 0, 1, 5, 6, 7, 4};
+        uint8_t const order_reverse[] = {2, 3, 0, 1, 7, 4, 5, 6};
 
         for (int i = 0; i < 8; i++)
             for (int j = i + 1; j < 8; j++)

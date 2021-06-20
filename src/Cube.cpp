@@ -433,20 +433,16 @@ const char* Cube::get_indexed_move_name(int index)
     return "How did we get here?";
 }
 
-bool Cube::move_is_unnecessary(int move, int prev_move) {
-    // If first letter of the move is the same
-    for (int i = 0; i < 6; i++) {
-        if ((move == i || move == 6 + i || move == 12 + i)
-        && (prev_move == i || prev_move == 6 + i || prev_move == 12 + i))
-            return true;
-    }
+bool Cube::move_is_unnecessary(int move, int prev_move) {    
+    // If first letter of the move is the same:
+    // "X X" == X2, "X2 X" == X', "X2 X2" == ""
+    if (std::abs(move - prev_move) % 6 == 0)
+        return true;
 
-    // L R and simular things
-    for (int i = 0; i <= 4; i += 2) {
-        if ((move == i || move == 6 + i || move == 12 + i)
-         && (prev_move == i + 1 || prev_move == 6 + i + 1 || prev_move == 12 + i + 1))
-            return true;
-    }
+    // "L R" and "R L" are commutative, so
+    // permit only one of those, and so on
+    if (move + 1 == prev_move && move % 2 == 0)
+        return true;
 
     return false;
 }
