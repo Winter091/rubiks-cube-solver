@@ -227,7 +227,7 @@ std::vector<int> find_solution(Cube c, algo_type type)
             type = algo_type::parallel;
     }
     
-    Timer timer;
+    //Timer timer;
     for (int i = 0; i < 4; i++) {
         std::cout << "Solving G" << i << " -> G" << i + 1 << "...";
         std::cout.flush();
@@ -242,7 +242,7 @@ std::vector<int> find_solution(Cube c, algo_type type)
 
         std::cout << '\n';
     }
-    std::cout << "\nThe entire solution took " << timer << '\n';
+    //std::cout << "\nThe entire solution took " << timer << '\n';
 
     simplify_solution(cube_solution);
     return cube_solution;

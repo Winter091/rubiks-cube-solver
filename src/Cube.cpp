@@ -119,7 +119,7 @@ void Cube::scramble(int num_moves)
         curr_move.append(possible_moves[move]);
     }
     
-    std::cout << "Scrambling cube using " << num_moves << " moves:\n" << curr_move << "\n\n";
+    //std::cout << "Scrambling cube using " << num_moves << " moves:\n" << curr_move << "\n\n";
     this->move(curr_move);
 }
 
