@@ -17,8 +17,12 @@ node and then evenly splits resulting nodes between threads, so each
 thread performs IDDFS on the some part of the tree. If one thread has 
 found the answer, all remaining stop their work.
 
-I haven't yet done the extensive testing, but it seems that the performance
-boost when using parallel version is something like (0.72 * thread_count) 
-times, compared to non-parallel version. Specifically, on 6-core ryzen 5
-4500u, it's 4.34x faster, thus making this implementation ~~very fast
-compared to others~~ not slow, at least (3-4 seconds avg to find the solution).
+What about performance? Well, it certainly could be better... It looks 
+like IDDFS doesn't do a good job here - there are too many 
+branches to consider even to just quickly solve G2 -> G3. 
+Multithreading helps a lot, but still - you may and will encounter 
+scrambles that will take 1 min, 10 min, even hours in the worst of the 
+worst case. But *usually* it's in the order of seconds. 
+
+Bidirectional BFS will perform much better here - it will solve everything
+almost instantly (< 1 sec).
